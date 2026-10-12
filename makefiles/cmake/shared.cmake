@@ -18,6 +18,8 @@ set(S2SDK_DEFINES
 	RAD_TELEMETRY_DISABLED
 	X64BITS
 	PLATFORM_64BITS
+	# Metamod:Source's headers for a Source 2 game
+	META_IS_SOURCE2
 )
 
 set(S2SDK_CXX_STANDARD 20)

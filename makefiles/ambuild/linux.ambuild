@@ -44,6 +44,9 @@ SHARED_LIBS = [
 def ConfigureCxx(context, binary, sdk):
   cxx = binary.compiler
   cxx.defines += DEFINES
+  # A plugin is a shared library (s2sdk-manifests.cmake's CMAKE_POSITION_INDEPENDENT_CODE)
+  if '-fPIC' not in cxx.cflags:
+    cxx.cflags += ['-fPIC']
   cxx.linkflags[0:0] = ['-lm']
   cxx.postlink += [os.path.join(sdk['path'], lib) for lib in STATIC_LIBS]
 

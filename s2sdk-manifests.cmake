@@ -21,9 +21,9 @@
 # for an SDK that builds it from source. The SDK's folder and protoc are the
 # INTERFACE_S2SDK_DIR / INTERFACE_S2SDK_PROTOC properties of <prefix>_headers.
 #
-# Including this file also sets the SDK's std::string / STL ABI defines for the
-# whole directory (and the ones added below it), so include it before the
-# project's vendored libraries.
+# Including this file also sets the SDK's std::string / STL ABI defines and
+# position independent code for the whole directory (and the ones added below
+# it), so include it before the project's vendored libraries.
 #
 # With MSVC the SDK's libraries use the static runtime (/MT): set
 # CMAKE_MSVC_RUNTIME_LIBRARY to MultiThreaded.
@@ -44,6 +44,10 @@ include("${CMAKE_CURRENT_LIST_DIR}/makefiles/cmake/protobufs.cmake")
 # of the directory this is included from and the ones added below it -- vendored
 # libraries a plugin passes strings to included. Include this file before them.
 add_compile_definitions(${S2SDK_ABI_DEFINES})
+
+# A plugin is a shared library: every static library linked into it, vendored
+# ones too, has to be position independent (linux.ambuild's -fPIC)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 function(s2sdk_manifest game sdk_dir)
 	cmake_parse_arguments(PARSE_ARGV 2 arg "" "PREFIX" "REPLACE")

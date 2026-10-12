@@ -43,7 +43,7 @@ s2sdk_protobufs(my_plugin common/netmessages.proto common/networkbasetypes.proto
 
 | Target | What it has |
 |---|---|
-| `<prefix>::headers` | include paths, defines and C++ standard |
+| `<prefix>::headers` | include paths, defines (`META_IS_SOURCE2` among them) and C++ standard |
 | `<prefix>::tier0`, `::interfaces`, `::mathlib`, `::protobuf`, `::steam_api` | one library each |
 | `<prefix>::s2sdk` | all of the above |
 
@@ -56,7 +56,7 @@ The SDK's libraries use the old `std::string` ABI on Linux (`_GLIBCXX_USE_CXX11_
 iterator debugging (`_ITERATOR_DEBUG_LEVEL=0`). Every library a plugin passes strings or STL types to
 has to agree, the vendored ones too, or the plugin loads with undefined symbols.
 
-- CMake: including `s2sdk-manifests.cmake` sets them for the whole directory and the ones added below
-  it, so include it before the project's vendored libraries.
+- CMake: including `s2sdk-manifests.cmake` sets them (and `CMAKE_POSITION_INDEPENDENT_CODE`) for the
+  whole directory and the ones added below it, so include it before the project's vendored libraries.
 - AMBuild: `configureCxx` sets them for the binary; add `SdkHelpers.abiDefines(cxx)` to the project's
   own libraries that don't go through it.
