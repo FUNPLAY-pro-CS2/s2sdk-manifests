@@ -1,0 +1,38 @@
+# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+#
+# What every platform needs from the SDK -- AMBuild twin of makefiles/cmake/shared.cmake.
+# The per-platform part is in linux.ambuild / windows.ambuild.
+import os
+
+# The same list, in the same order, as shared.cmake's.
+INCLUDE_PATHS = [
+  'thirdparty/protobuf-3.21.8/src',
+  'public',
+  'public/mathlib',
+  'public/tier0',
+  'public/tier1',
+  'public/entity2',
+  'game/shared',
+  'common',
+]
+
+DEFINES = [
+  'GAME_DLL',
+  'RAD_TELEMETRY_DISABLED',
+  'X64BITS',
+  'PLATFORM_64BITS',
+]
+
+CXX_STANDARD = 20
+
+def ConfigureCxx(context, binary, sdk):
+  cxx = binary.compiler
+  cxx.defines += ['SOURCE_ENGINE={}'.format(sdk['code'])] + DEFINES
+  cxx.cxxincludes += [os.path.join(sdk['path'], path) for path in INCLUDE_PATHS]
+
+  # The C++ standard the SDK's headers need, unless the project picked one
+  if cxx.family == 'msvc':
+    if not any(flag.startswith('/std:') for flag in cxx.cflags + cxx.cxxflags):
+      cxx.cxxflags += ['/std:c++{}'.format(CXX_STANDARD)]
+  elif not any(flag.startswith('-std=') for flag in cxx.cflags + cxx.cxxflags):
+    cxx.cxxflags += ['-std=c++{}'.format(CXX_STANDARD)]

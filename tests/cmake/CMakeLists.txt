@@ -16,7 +16,7 @@ if(NOT S2SDK_DIR)
 	set(S2SDK_DIR "$ENV{S2SDK}")
 endif()
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/s2sdk-manifests.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../s2sdk-manifests.cmake)
 s2sdk_manifest(${GAME} "${S2SDK_DIR}")
 
 add_library(s2sdk_manifests_test SHARED main.cpp)

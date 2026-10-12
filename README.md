@@ -1,66 +1,51 @@
 s2sdk-manifests
 ---------------
 
-What a project needs to build against [s2sdk](https://github.com/alliedmodders/s2sdk) (the Source 2
-SDKs: cs2, dota, deadlock), in one place for both AMBuild and CMake. It's the Source 2 counterpart of
-[hl2sdk-manifests](https://github.com/alliedmodders/hl2sdk-manifests), and this repository started as a
-copy of it.
+What a project needs to build against [s2sdk](https://github.com/alliedmodders/s2sdk) (cs2, dota,
+deadlock), for AMBuild and CMake alike. It's the Source 2 counterpart of
+[hl2sdk-manifests](https://github.com/alliedmodders/hl2sdk-manifests), which this repository started from.
 
 ```
-manifests/<game>.json        include paths, defines, libraries, protoc, C++ standard, platforms
-SdkHelpers.ambuild           AMBuild: same interface as hl2sdk-manifests' SdkHelpers
-cmake/s2sdk-manifests.cmake  CMake: s2sdk_manifest() targets and s2sdk_protobufs()
-tests/cmake                  builds a small library through the CMake module
+manifests/<game>.json            what differs per game: name, SOURCE_ENGINE code, platforms, env vars
+SdkHelpers.ambuild               AMBuild entry point (hl2sdk-manifests' SdkHelpers interface)
+s2sdk-manifests.cmake            CMake entry point (s2sdk_manifest(), s2sdk_protobufs())
+makefiles/ambuild/shared.ambuild <-> makefiles/cmake/shared.cmake    include paths, defines, C++ standard
+makefiles/ambuild/linux.ambuild  <-> makefiles/cmake/linux.cmake     Linux defines, libraries, protoc
+makefiles/ambuild/windows.ambuild <-> makefiles/cmake/windows.cmake  Windows defines, libraries, protoc
+makefiles/cmake/protobufs.cmake                                      s2sdk_protobufs(), AMBuild's Protoc tool
+tests/ambuild, tests/cmake       the same small library through each
 ```
 
-Both build systems read the same manifest, so an AMBuild build and a CMake build of a project get
-the same include paths, defines and libraries. A change to what the SDK needs (a moved header folder,
-a new library) is made once, in the manifest.
-
-## Manifests
-
-Every list (`defines`, `cflags`, `cxxflags`, `linkflags`, `libs`, `postlink_libs`, `dynamic_libs`)
-can be at the top level, in the platform (`linux`, `windows`) or in the platform's arch (`x86_64`).
-The top level applies everywhere and the arch level is the most specific. Library paths are
-relative to the SDK.
-
-- `libs` are linked by path.
-- `postlink_libs` come after the binary's own objects.
-- `dynamic_libs` are shared libraries the binary loads at runtime (`libtier0.so`, `libsteam_api.so`).
-  AMBuild links them by file name from the binary's folder.
-
-`SOURCE_ENGINE=<code>` is defined from `code`. `env_vars` are the variables the SDK's path is read
-from, in order.
+Each `.ambuild` file has a `.cmake` twin with the same lists in the same order, so both build systems
+give a binary the same include paths, defines and libraries. A change to what the SDK needs goes into
+both twins.
 
 ## AMBuild
 
 ```python
 SdkHelpers = builder.Eval('s2sdk-manifests/SdkHelpers.ambuild')
-SdkHelpers.findSdks(builder, cxx_list, ['cs2'])   # find_sdk_path defaults to the manifest's env_vars
+SdkHelpers.findSdks(builder, cxx_list, ['cs2'])  # find_sdk_path defaults to the manifest's env_vars
 for sdk_target in SdkHelpers.sdk_targets:
-    binary = ...
     SdkHelpers.configureCxx(builder, binary, sdk_target.sdk)
-    # sdk_target.protoc: protoc set up with the SDK's include paths
+    # sdk_target.protoc: protoc with the SDK's include paths
 ```
 
 ## CMake
 
 ```cmake
-include(s2sdk-manifests/cmake/s2sdk-manifests.cmake)
-s2sdk_manifest(cs2 "$ENV{S2SDK}")                          # s2sdk::headers, s2sdk::s2sdk, ...
-s2sdk_manifest(dota "${DOTA_SDK}" PREFIX s2sdk_dota)       # a second SDK in the same build
+include(s2sdk-manifests/s2sdk-manifests.cmake)
+s2sdk_manifest(cs2 "$ENV{S2SDK}")                       # s2sdk::headers, s2sdk::s2sdk, ...
+s2sdk_manifest(dota "${DOTA_SDK}" PREFIX s2sdk_dota)    # a second SDK in the same build
 
 target_link_libraries(my_plugin PRIVATE s2sdk::s2sdk)
 s2sdk_protobufs(my_plugin common/netmessages.proto common/networkbasetypes.proto)
 ```
 
-The module creates these targets:
-
 | Target | What it has |
 |---|---|
 | `<prefix>::headers` | include paths, defines and C++ standard |
 | `<prefix>::tier0`, `::interfaces`, `::mathlib`, `::protobuf`, `::steam_api` | one library each |
-| `<prefix>::s2sdk` | all of the above and the link flags |
+| `<prefix>::s2sdk` | all of the above |
 
-With MSVC the SDK's prebuilt libraries use the static runtime (`/MT`), so set
-`CMAKE_MSVC_RUNTIME_LIBRARY` to `MultiThreaded`.
+With MSVC the SDK's libraries use the static runtime (`/MT`), so set `CMAKE_MSVC_RUNTIME_LIBRARY` to
+`MultiThreaded`.

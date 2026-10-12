@@ -1,0 +1,51 @@
+# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+#
+# What Linux needs from the SDK -- AMBuild twin of makefiles/cmake/linux.cmake.
+import os
+
+DEFINES = [
+  'COMPILER_GCC',
+  '_LINUX',
+  'LINUX',
+  'POSIX',
+  'GNUC',
+  # libprotobuf.a and tier0 use the old std::string ABI
+  '_GLIBCXX_USE_CXX11_ABI=0',
+  '_finite=finite',
+  'stricmp=strcasecmp',
+  '_stricmp=strcasecmp',
+  'strnicmp=strncasecmp',
+  '_strnicmp=strncasecmp',
+  'strcmpi=strcasecmp',
+  '_vsnprintf=vsnprintf',
+  '_alloca=alloca',
+]
+
+# After the binary's own objects
+STATIC_LIBS = [
+  'lib/linux64/mathlib.a',
+  'lib/linux64/interfaces.a',
+  'lib/linux64/release/libprotobuf.a',
+]
+
+# Loaded at runtime, from next to the binary like the game's modules
+SHARED_LIBS = [
+  'lib/linux64/libtier0.so',
+  'lib/linux64/libsteam_api.so',
+]
+
+PROTOC = 'devtools/bin/linux/protoc'
+
+def ConfigureCxx(context, binary, sdk):
+  cxx = binary.compiler
+  cxx.defines += DEFINES
+  cxx.linkflags[0:0] = ['-lm']
+  cxx.postlink += [os.path.join(sdk['path'], lib) for lib in STATIC_LIBS]
+
+  # Linked by file name from the binary's folder
+  for lib in SHARED_LIBS:
+    file_name = os.path.basename(lib)
+    context.AddFolder(binary.localFolder)
+    output = context.AddSymlink(os.path.join(sdk['path'], lib), os.path.join(binary.localFolder, file_name))
+    cxx.weaklinkdeps += [output]
+    cxx.linkflags[0:0] = [file_name]
