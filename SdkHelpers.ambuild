@@ -1,31 +1,21 @@
-# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+# vim: set sts=4 ts=8 sw=4 tw=99 et ft=python:
+#
+# The AMBuild side of s2sdk-manifests: the same interface as hl2sdk-manifests'
+# SdkHelpers (findSdks, sdk_targets, configureCxx, SdkTarget.protoc), for the
+# Source 2 SDKs only. Everything an SDK needs comes from manifests/<game>.json,
+# which cmake/s2sdk-manifests.cmake reads too, so AMBuild and CMake builds get
+# the same include paths, defines and libraries.
 import json
 import os
 
 def get_this_file_path():
     return get_this_file_path.__code__.co_filename
 
-class SdkLibBuilder(object):
-    def __init__(self, sdk, name, cxx):
-        self.targets = [cxx.clone()]
-        self.libs = []
-        self.sdk = sdk
-        self.name = name
-    def ConfigureLibrary(self, project, compiler, context, prefix = ''):
-        name = prefix + project.name
-        binary = project.Configure(compiler, '{0}_{1}'.format(self.sdk['name'], name), '{0} - {1} - {2}'.format(self.sdk['name'], self.name, compiler.target.arch))
-        binary.compiler.cxxincludes += [
-            os.path.join(context.currentSourcePath)
-        ]
-        SdkHelpers.configureCxx(context, binary, self.sdk)
-        return binary
-
 
 class SdkTarget(object):
     def __init__(self, context, sdk, cxx):
         self.sdk = sdk
         self.cxx = cxx
-        # Find protoc
         self.protoc = None
         rel_protoc_path = sdk[cxx.target.platform].get('protoc_path', None)
         if rel_protoc_path:
@@ -33,53 +23,29 @@ class SdkTarget(object):
             self.protoc = context.DetectProtoc(path = protoc_path)
             for path in sdk['include_paths']:
                 self.protoc.includes += [os.path.join(sdk['path'], path)]
-        # Find tier1
-        tier1 = SdkTarget.findLibrary(context, sdk, cxx, 'tier1')
-        # Find mathlib
-        mathlib = SdkTarget.findLibrary(context, sdk, cxx, 'mathlib')
 
-        # Only append the libs at the end, so they aren't found during the configureCxx step
-        if not 'tier1' in sdk :
-            sdk['tier1'] = {}
-        if not 'mathlib' in sdk :
-            sdk['mathlib'] = {}
-        sdk['tier1'][cxx.target.arch] = tier1
-        sdk['mathlib'][cxx.target.arch] = mathlib
-
-
-    @staticmethod
-    def findLibrary(context, sdk, cxx, name):
-        # Source 2 sdks are currently on a grace period where they still link mathlib/etc manually
-        # AMBuild's visual studio solution file generation needs to be fixed before this check can be removed
-        # If unaware of the details ask @GAMMACASE or @Kenzzer
-        if sdk['source2']:
-            return None
-
-        # Mock libs are currently unhandled (different ambuild scripts)
-        if sdk['name'] == 'mock':
-            return None
-        ambuilder = os.path.join(sdk['path'], name, 'AMBuilder')
-        if os.path.exists(ambuilder):
-            ambuilder = os.path.abspath(ambuilder)
-            libbuilders = SdkLibBuilder(sdk, name, cxx)
-            oldSource = context.cm.sourcePath
-            context.cm.sourcePath = os.path.dirname(ambuilder)
-            libcontext = context.Build('AMBuilder', { 'HL2SDK': libbuilders })
-            context.cm.sourcePath = oldSource
-            if len(libbuilders.libs) != 1:
-                raise Exception('No lib found for {0}'.format(name))
-            return libbuilders.libs[0]
-        return None
 
 class SdkHelpers(object):
     def __init__(self):
         self.sdks = {}
         self.sdk_manifests = []
         self.sdk_filter = None
-        self.find_sdk_path = None
+        self.find_sdk_path = SdkHelpers.findSdkPathFromEnv
         self.sdk_targets = []
 
-    # find_sdk_path must be set to use.
+    # The first of the manifest's env_vars that is set, else None. The default
+    # find_sdk_path; a project can set its own (e.g. to also look for folders).
+    def findSdkPathFromEnv(sdk_name, sdk = None):
+        for sdk_info_name, sdk_info in SdkHelpers.getSdks(None):
+            if sdk_info_name != sdk_name:
+                continue
+            for var in sdk_info.get('env_vars', [sdk_info['env_var']]):
+                path = os.environ.get(var)
+                if path:
+                    return path
+        return None
+    findSdkPathFromEnv = staticmethod(findSdkPathFromEnv)
+
     def findSdks(self, builder, cxx_list, sdk_list):
         not_found = []
         sdk_remaining = set(sdk_list)
@@ -110,20 +76,18 @@ class SdkHelpers(object):
 
         if 'present' in sdk_list:
             for sdk in not_found:
-                print('Warning: hl2sdk-{} was not found, and will not be included in build.'.format(sdk))
+                print('Warning: s2sdk ({}) was not found, and will not be included in build.'.format(sdk))
         elif len(sdk_remaining) and 'all' not in sdk_list:
             for sdk in sdk_remaining:
-                print('Error: hl2sdk-{} was not found.'.format(sdk))
-            raise Exception('Missing hl2sdks: {}'.format(','.join(sdk_remaining)))
+                print('Error: s2sdk ({}) was not found.'.format(sdk))
+            raise Exception('Missing s2sdks: {}'.format(','.join(sdk_remaining)))
 
         if not len(self.sdk_targets) and len(sdk_list):
             raise Exception('No buildable SDKs were found, nothing to build.')
 
     @staticmethod
     def shouldRequireSdk(sdk_name, sdk_list):
-        if 'all' in sdk_list:
-            return sdk_name != 'mock'
-        if sdk_name in sdk_list:
+        if 'all' in sdk_list or sdk_name in sdk_list:
             return True
         return 'present' not in sdk_list
 
@@ -155,22 +119,15 @@ class SdkHelpers(object):
         cxx_list = getattr(cxx, list_name)
         cxx_list.extend(result)
 
+    # The manifest's top level list, then its platform's, then its arch's
     @staticmethod
     def getLists(sdk, list_name, cxx):
-        result = SdkHelpers.getListsImpl(sdk, list_name, cxx)
-        if Project in sdk:
-            result += SdkHelpers.getListsImpl(sdk[Project], list_name, cxx)
-        return result
-
-    @staticmethod
-    def getListsImpl(info, list_name, cxx):
-        result = []
-        if cxx.target.platform in info:
-            platform_info = info[cxx.target.platform]
+        result = list(sdk.get(list_name, []))
+        if cxx.target.platform in sdk:
+            platform_info = sdk[cxx.target.platform]
             result += platform_info.get(list_name, [])
             if cxx.target.arch in platform_info:
-                arch_info = platform_info[cxx.target.arch]
-                result += arch_info.get(list_name, [])
+                result += platform_info[cxx.target.arch].get(list_name, [])
         return result
 
     @staticmethod
@@ -182,68 +139,37 @@ class SdkHelpers(object):
             sdk_manifest_dir = os.path.join(os.path.dirname(get_this_file_path()), 'manifests')
 
         out = []
-        for sdk_manifest in os.listdir(sdk_manifest_dir):
+        for sdk_manifest in sorted(os.listdir(sdk_manifest_dir)):
             sdk_name, _ = os.path.splitext(sdk_manifest)
             sdk_manifest_path = os.path.join(sdk_manifest_dir, sdk_manifest)
             with open(sdk_manifest_path, 'rt') as fp:
                 sdk = json.load(fp)
-                builder.AddConfigureFile(sdk_manifest_path)
+                if builder is not None:
+                    builder.AddConfigureFile(sdk_manifest_path)
                 out.append((sdk_name, sdk))
         return out
-
-    @staticmethod
-    def addLibrary(context, binary, sdk, name):
-        ambuilder = os.path.join(sdk['path'], name, 'AMBuilder')
-        if os.path.exists(ambuilder):
-            builder = SdkLibBuilder(sdk['name'], binary.compiler)
-            context.Build([ambuilder], { 'HL2SDK': builder })
-            if len(builder.libs) != 1:
-                raise Exception('No lib found for {0}'.format(name))
-            task = builder.libs[0]
-            binary.compiler.postlink += [os.path.join(context.buildPath, task.binary.path)]
-            binary.compiler.linkdeps += [task.binary]
 
     @staticmethod
     def configureCxx(context, binary, sdk):
         cxx = binary.compiler
 
-        # Includes/defines.
+        # Includes, defines and flags, all from the manifest
         cxx.defines += ['SOURCE_ENGINE={}'.format(sdk['code'])]
-        cxx.defines += ['GAME_DLL', 'RAD_TELEMETRY_DISABLED']
-
-        if sdk['name'] in ['sdk2013', 'bms', 'pvkii', 'tf2', 'css', 'dods', 'hl2dm', 'l4d2'] and cxx.like('gcc'):
-            # The 2013 SDK already has these in public/tier0/basetypes.h
-            rm_defines = [
-                'stricmp=strcasecmp', '_stricmp=strcasecmp',
-                '_snprintf=snprintf', '_vsnprintf=vsnprintf,'
-            ]
-            for rm_define in rm_defines:
-                if rm_define in cxx.defines:
-                    try:
-                        cxx.defines.remove(rm_define)
-                    except ValueError:
-                        pass
-
-        if cxx.family == 'msvc':
-            cxx.defines += ['COMPILER_MSVC']
-            if cxx.target.arch == 'x86':
-                cxx.defines += ['COMPILER_MSVC32', 'WIN32']
-            elif cxx.target.arch == 'x86_64':
-                cxx.defines += ['COMPILER_MSVC64', 'WIN32', 'WIN64']
-
-            if cxx.version >= 1900:
-                cxx.linkflags += ['legacy_stdio_definitions.lib']
-        else:
-            cxx.defines += ['COMPILER_GCC', '_LINUX', 'LINUX', 'POSIX', 'GNUC']
-
-        if cxx.target.arch == 'x86_64':
-            cxx.defines += ['X64BITS', 'PLATFORM_64BITS']
-
         SdkHelpers.addLists(sdk, 'defines', cxx)
+        SdkHelpers.addLists(sdk, 'cflags', cxx)
+        SdkHelpers.addLists(sdk, 'cxxflags', cxx)
         SdkHelpers.addLists(sdk, 'linkflags', cxx)
 
         for path in sdk['include_paths']:
             cxx.cxxincludes += [os.path.join(sdk['path'], path)]
+
+        # The C++ standard the SDK's headers need, unless the project picked one
+        if 'cxx_standard' in sdk:
+            if cxx.family == 'msvc':
+                if not any(flag.startswith('/std:') for flag in cxx.cxxflags):
+                    cxx.cxxflags += ['/std:c++{}'.format(sdk['cxx_standard'])]
+            elif not any(flag.startswith('-std=') for flag in cxx.cxxflags):
+                cxx.cxxflags += ['-std=c++{}'.format(sdk['cxx_standard'])]
 
         # Link steps.
         for lib in SdkHelpers.getLists(sdk, 'libs', cxx):
@@ -251,8 +177,9 @@ class SdkHelpers(object):
         for lib in SdkHelpers.getLists(sdk, 'postlink_libs', cxx):
             cxx.postlink += [os.path.join(sdk['path'], lib)]
 
-        dynamic_libs = SdkHelpers.getLists(sdk, 'dynamic_libs', cxx)
-        for library in dynamic_libs:
+        # Shared libraries are linked by file name from the binary's folder, so the
+        # binary looks for them next to itself at runtime like the game's modules
+        for library in SdkHelpers.getLists(sdk, 'dynamic_libs', cxx):
             file_name = os.path.split(library)[1]
             source_path = os.path.join(sdk['path'], library)
             output_path = os.path.join(binary.localFolder, file_name)
@@ -263,36 +190,12 @@ class SdkHelpers(object):
             cxx.weaklinkdeps += [output]
             cxx.linkflags[0:0] = [file_name]
 
-        # cflags
-        for cflag in SdkHelpers.getLists(sdk, 'cflags', cxx):
-            cxx.cflags += [cflag]
-
-        # cxxflags
-        for cxxflag in SdkHelpers.getLists(sdk, 'cxxflags', cxx):
-            cxx.cxxflags += [cxxflag]
-
-        if cxx.target.platform == 'linux':
-            cxx.linkflags[0:0] = ['-lm']
-
-        if cxx.target.platform == 'linux':
-            if sdk[cxx.target.platform]['uses_system_cxxlib']:
-                try:
-                    cxx.linkflags.remove('-static-libstdc++')
-                except ValueError:
-                    pass
-                cxx.linkflags += ['-lstdc++']
-
-        if 'tier1' in sdk and cxx.target.arch in sdk['tier1']:
-            task = sdk['tier1'][cxx.target.arch]
-            if task != None:
-                cxx.postlink += [os.path.join(context.buildPath, task.binary.path)]
-                cxx.linkdeps += [task.binary]
-
-        if 'mathlib' in sdk and cxx.target.arch in sdk['mathlib']:
-            task = sdk['mathlib'][cxx.target.arch]
-            if task != None:
-                cxx.postlink += [os.path.join(context.buildPath, task.binary.path)]
-                cxx.linkdeps += [task.binary]
+        if cxx.target.platform == 'linux' and sdk['linux'].get('uses_system_cxxlib', False):
+            try:
+                cxx.linkflags.remove('-static-libstdc++')
+            except ValueError:
+                pass
+            cxx.linkflags += ['-lstdc++']
 
 
 rvalue = SdkHelpers()

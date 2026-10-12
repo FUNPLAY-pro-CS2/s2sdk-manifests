@@ -1,5 +1,7 @@
 {
     "name": "cs2",
+    "branch": "cs2",
+    "env_vars": ["S2SDK_CS2", "S2SDKCS2", "S2SDK", "HL2SDK_CS2", "HL2SDKCS2"],
     "env_var": "HL2SDKCS2",
     "extension": "2.cs2",
     "code": 25,
@@ -13,18 +15,22 @@
         ]
     },
     "source2": true,
+    "cxx_standard": 20,
     "include_paths": [
         "thirdparty/protobuf-3.21.8/src",
         "public",
-        "public/engine",
         "public/mathlib",
         "public/tier0",
         "public/tier1",
         "public/entity2",
-        "public/game/server",
         "game/shared",
-        "game/server",
         "common"
+    ],
+    "defines": [
+        "GAME_DLL",
+        "RAD_TELEMETRY_DISABLED",
+        "X64BITS",
+        "PLATFORM_64BITS"
     ],
     "linux": {
         "x86_64": {
@@ -34,11 +40,28 @@
                 "lib/linux64/release/libprotobuf.a"
             ],
             "dynamic_libs": [
-                "lib/linux64/libtier0.so"
+                "lib/linux64/libtier0.so",
+                "lib/linux64/libsteam_api.so"
             ]
         },
         "defines": [
-            "_GLIBCXX_USE_CXX11_ABI=0"
+            "COMPILER_GCC",
+            "_LINUX",
+            "LINUX",
+            "POSIX",
+            "GNUC",
+            "_GLIBCXX_USE_CXX11_ABI=0",
+            "_finite=finite",
+            "stricmp=strcasecmp",
+            "_stricmp=strcasecmp",
+            "strnicmp=strncasecmp",
+            "_strnicmp=strncasecmp",
+            "strcmpi=strcasecmp",
+            "_vsnprintf=vsnprintf",
+            "_alloca=alloca"
+        ],
+        "linkflags": [
+            "-lm"
         ],
         "uses_system_cxxlib": false,
         "protoc_path": "devtools/bin/linux/protoc"
@@ -49,9 +72,20 @@
                 "lib/public/win64/2015/libprotobuf.lib",
                 "lib/public/win64/mathlib.lib",
                 "lib/public/win64/tier0.lib",
-                "lib/public/win64/interfaces.lib"
+                "lib/public/win64/interfaces.lib",
+                "lib/public/win64/steam_api64.lib"
             ]
         },
+        "defines": [
+            "COMPILER_MSVC",
+            "COMPILER_MSVC64",
+            "WIN32",
+            "WIN64",
+            "_ITERATOR_DEBUG_LEVEL=0"
+        ],
+        "linkflags": [
+            "legacy_stdio_definitions.lib"
+        ],
         "protoc_path": "devtools/bin/protoc.exe"
     }
 }
