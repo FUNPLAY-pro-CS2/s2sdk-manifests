@@ -26,7 +26,7 @@
 
 cmake_minimum_required(VERSION 3.19) # string(JSON)
 
-set(S2SDK_MANIFESTS_DIR "${CMAKE_CURRENT_LIST_DIR}" CACHE INTERNAL "s2sdk-manifests root")
+set(S2SDK_MANIFESTS_ROOT "${CMAKE_CURRENT_LIST_DIR}" CACHE INTERNAL "s2sdk-manifests root")
 
 include("${CMAKE_CURRENT_LIST_DIR}/makefiles/cmake/shared.cmake")
 if(WIN32)
@@ -42,7 +42,7 @@ function(s2sdk_manifest game sdk_dir)
 		set(arg_PREFIX s2sdk)
 	endif()
 
-	set(manifest "${S2SDK_MANIFESTS_DIR}/manifests/${game}.json")
+	set(manifest "${S2SDK_MANIFESTS_ROOT}/manifests/${game}.json")
 	if(NOT EXISTS "${manifest}")
 		message(FATAL_ERROR "s2sdk-manifests: no manifest for '${game}'")
 	endif()
