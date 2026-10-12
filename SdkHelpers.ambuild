@@ -27,7 +27,13 @@ def Load(name):
   spec = importlib.util.spec_from_loader('s2sdk_manifests_' + name,
     importlib.machinery.SourceFileLoader('s2sdk_manifests_' + name, path))
   module = importlib.util.module_from_spec(spec)
-  spec.loader.exec_module(module)
+  # No __pycache__ next to the scripts, in a checkout that may be read-only
+  dont_write_bytecode = sys.dont_write_bytecode
+  sys.dont_write_bytecode = True
+  try:
+    spec.loader.exec_module(module)
+  finally:
+    sys.dont_write_bytecode = dont_write_bytecode
   return module
 
 Shared = Load('shared')
