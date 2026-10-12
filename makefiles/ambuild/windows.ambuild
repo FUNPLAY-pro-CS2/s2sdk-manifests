@@ -13,6 +13,12 @@ DEFINES = [
   '_ITERATOR_DEBUG_LEVEL=0',
 ]
 
+# What the STL layout depends on: every binary of the project has to agree with
+# it, the vendored libraries too (SdkHelpers.abiDefines())
+ABI_DEFINES = [
+  '_ITERATOR_DEBUG_LEVEL=0',
+]
+
 # Built with the static runtime (/MT), so the binary has to be as well
 LIBS = [
   'lib/public/win64/2015/libprotobuf.lib',

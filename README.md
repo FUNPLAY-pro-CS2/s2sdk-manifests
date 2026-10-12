@@ -49,3 +49,14 @@ s2sdk_protobufs(my_plugin common/netmessages.proto common/networkbasetypes.proto
 
 With MSVC the SDK's libraries use the static runtime (`/MT`), so set `CMAKE_MSVC_RUNTIME_LIBRARY` to
 `MultiThreaded`.
+
+## The std::string / STL ABI
+
+The SDK's libraries use the old `std::string` ABI on Linux (`_GLIBCXX_USE_CXX11_ABI=0`) and no MSVC
+iterator debugging (`_ITERATOR_DEBUG_LEVEL=0`). Every library a plugin passes strings or STL types to
+has to agree, the vendored ones too, or the plugin loads with undefined symbols.
+
+- CMake: including `s2sdk-manifests.cmake` sets them for the whole directory and the ones added below
+  it, so include it before the project's vendored libraries.
+- AMBuild: `configureCxx` sets them for the binary; add `SdkHelpers.abiDefines(cxx)` to the project's
+  own libraries that don't go through it.

@@ -21,6 +21,13 @@ set(S2SDK_PLATFORM_DEFINES
 )
 
 # linux.ambuild's static libraries, then its shared ones (loaded at runtime)
+# What the std::string / STL layout depends on: every target of the project has
+# to agree with it, the vendored libraries too (s2sdk-manifests.cmake sets it
+# for the whole directory it is included from)
+set(S2SDK_ABI_DEFINES
+	_GLIBCXX_USE_CXX11_ABI=0
+)
+
 set(S2SDK_LIBS
 	lib/linux64/mathlib.a
 	lib/linux64/interfaces.a

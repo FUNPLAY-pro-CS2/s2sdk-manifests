@@ -128,6 +128,13 @@ class SdkHelpers(object):
     Shared.ConfigureCxx(context, binary, sdk)
     Platforms[binary.compiler.target.platform].ConfigureCxx(context, binary, sdk)
 
+  # The std::string / STL ABI defines the SDK's libraries were built with, for a
+  # project's own libraries that don't go through configureCxx (vendored code
+  # the plugin passes strings to): cxx.defines += SdkHelpers.abiDefines(cxx)
+  @staticmethod
+  def abiDefines(cxx):
+    return list(Platforms[cxx.target.platform].ABI_DEFINES)
+
   # The protos the binary uses, generated and compiled with it (protobufs.ambuild)
   @staticmethod
   def addProtobufs(context, binary, sdk_target, protos):

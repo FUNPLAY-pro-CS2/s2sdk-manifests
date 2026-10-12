@@ -12,6 +12,13 @@ set(S2SDK_PLATFORM_DEFINES
 	_ITERATOR_DEBUG_LEVEL=0
 )
 
+# What the STL layout depends on: every target of the project has to agree with
+# it, the vendored libraries too (s2sdk-manifests.cmake sets it for the whole
+# directory it is included from)
+set(S2SDK_ABI_DEFINES
+	_ITERATOR_DEBUG_LEVEL=0
+)
+
 # Built with the static runtime (/MT), so the binary has to be as well
 set(S2SDK_LIBS
 	lib/public/win64/2015/libprotobuf.lib
