@@ -41,8 +41,9 @@ def ConfigureCxx(context, binary, sdk):
   cxx.linkflags[0:0] = ['-lm']
   cxx.postlink += [os.path.join(sdk['path'], lib) for lib in STATIC_LIBS]
 
-  # Linked by file name from the binary's folder
-  for lib in SHARED_LIBS:
+  # Linked by file name from the binary's folder; added to the front, so in
+  # reverse to keep SHARED_LIBS' order (the same as linux.cmake's)
+  for lib in reversed(SHARED_LIBS):
     file_name = os.path.basename(lib)
     context.AddFolder(binary.localFolder)
     output = context.AddSymlink(os.path.join(sdk['path'], lib), os.path.join(binary.localFolder, file_name))

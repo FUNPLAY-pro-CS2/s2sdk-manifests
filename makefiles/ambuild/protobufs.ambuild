@@ -15,9 +15,19 @@ def DetectProtoc(context, sdk, include_paths):
 
 # Generates the given protos into the binary and compiles them with it, like
 # s2sdk_protobufs(). The protos are relative to the SDK or absolute, and a
-# proto's imports have to be listed too.
+# proto's imports have to be listed too. Imports are looked up in each proto's
+# folder, then the folders of all listed protos, then the SDK's include paths.
 #
 #   SdkHelpers.addProtobufs(builder, binary, sdk_target, ['common/netmessages.proto', ...])
 def AddProtobufs(context, binary, sdk_target, protos):
   sources = [proto if os.path.isabs(proto) else os.path.join(sdk_target.sdk['path'], proto) for proto in protos]
-  binary.custom += [context.tools.Protoc(protoc = sdk_target.protoc, sources = sources)]
+  job = context.tools.Protoc(protoc = sdk_target.protoc, sources = sources)
+  # The job has its own copy of protoc: the listed protos' folders go first, as with CMake
+  folders = []
+  for source in sources:
+    folder = os.path.dirname(source)
+    if folder not in folders:
+      folders.append(folder)
+  job.protoc.includes = folders + [path for path in job.protoc.includes if path not in folders]
+  binary.custom += [job]
+  return job

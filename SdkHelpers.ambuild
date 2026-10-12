@@ -131,6 +131,6 @@ class SdkHelpers(object):
   # The protos the binary uses, generated and compiled with it (protobufs.ambuild)
   @staticmethod
   def addProtobufs(context, binary, sdk_target, protos):
-    Protobufs.AddProtobufs(context, binary, sdk_target, protos)
+    return Protobufs.AddProtobufs(context, binary, sdk_target, protos)
 
 rvalue = SdkHelpers()

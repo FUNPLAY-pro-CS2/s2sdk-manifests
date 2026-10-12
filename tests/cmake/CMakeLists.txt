@@ -21,4 +21,16 @@ s2sdk_manifest(${GAME} "${S2SDK_DIR}")
 
 add_library(s2sdk_manifests_test SHARED main.cpp)
 target_link_libraries(s2sdk_manifests_test PRIVATE s2sdk::s2sdk)
-s2sdk_protobufs(s2sdk_manifests_test common/valveextensions.proto common/network_connection.proto common/networkbasetypes.proto)
+# Plain-name imports across folders (cstrike15_gcmessages -> steammessages) too
+s2sdk_protobufs(s2sdk_manifests_test
+	common/valveextensions.proto
+	common/network_connection.proto
+	common/networkbasetypes.proto
+	gcsdk/steammessages.proto
+	gcsdk/gcsdk_gcmessages.proto
+	gcsdk/gcsystemmsgs.proto
+	common/engine_gcmessages.proto
+	game/shared/base_gcmessages.proto
+	game/shared/econ/econ_gcmessages.proto
+	game/shared/cstrike15/cstrike15_gcmessages.proto
+)

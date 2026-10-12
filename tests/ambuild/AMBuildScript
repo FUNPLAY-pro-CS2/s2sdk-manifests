@@ -17,9 +17,17 @@ for sdk_target in SdkHelpers.sdk_targets:
   else:
     binary.compiler.cflags += ['/MT', '/EHsc']
   SdkHelpers.configureCxx(builder, binary, sdk)
+  # Plain-name imports across folders (cstrike15_gcmessages -> steammessages) too
   SdkHelpers.addProtobufs(builder, binary, sdk_target, [
     'common/valveextensions.proto',
     'common/network_connection.proto',
     'common/networkbasetypes.proto',
+    'gcsdk/steammessages.proto',
+    'gcsdk/gcsdk_gcmessages.proto',
+    'gcsdk/gcsystemmsgs.proto',
+    'common/engine_gcmessages.proto',
+    'game/shared/base_gcmessages.proto',
+    'game/shared/econ/econ_gcmessages.proto',
+    'game/shared/cstrike15/cstrike15_gcmessages.proto',
   ])
   builder.Add(binary)
