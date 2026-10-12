@@ -6,7 +6,8 @@
 # manifests/<game>.json has what differs per game. What a binary needs from the
 # SDK is the same for every game and comes from makefiles/ambuild/:
 # shared.ambuild <-> shared.cmake, linux.ambuild <-> linux.cmake,
-# windows.ambuild <-> windows.cmake -- the AMBuild twins of makefiles/cmake/,
+# windows.ambuild <-> windows.cmake, protobufs.ambuild <-> protobufs.cmake --
+# the AMBuild twins of makefiles/cmake/,
 # which s2sdk-manifests.cmake loads for CMake builds.
 import importlib.util
 import json
@@ -37,6 +38,7 @@ def Load(name):
   return module
 
 Shared = Load('shared')
+Protobufs = Load('protobufs')
 Platforms = {
   'linux': Load('linux'),
   'windows': Load('windows'),
@@ -46,11 +48,7 @@ class SdkTarget(object):
   def __init__(self, context, sdk, cxx):
     self.sdk = sdk
     self.cxx = cxx
-    # protoc runs on the host, which can differ from the target
-    host = Platforms['windows' if sys.platform == 'win32' else 'linux']
-    self.protoc = context.DetectProtoc(path = os.path.join(sdk['path'], host.PROTOC))
-    for path in Shared.INCLUDE_PATHS:
-      self.protoc.includes += [os.path.join(sdk['path'], path)]
+    self.protoc = Protobufs.DetectProtoc(context, sdk, Shared.INCLUDE_PATHS)
 
 class SdkHelpers(object):
   def __init__(self):
@@ -129,5 +127,10 @@ class SdkHelpers(object):
   def configureCxx(context, binary, sdk):
     Shared.ConfigureCxx(context, binary, sdk)
     Platforms[binary.compiler.target.platform].ConfigureCxx(context, binary, sdk)
+
+  # The protos the binary uses, generated and compiled with it (protobufs.ambuild)
+  @staticmethod
+  def addProtobufs(context, binary, sdk_target, protos):
+    Protobufs.AddProtobufs(context, binary, sdk_target, protos)
 
 rvalue = SdkHelpers()

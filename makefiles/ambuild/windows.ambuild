@@ -22,7 +22,6 @@ LIBS = [
   'lib/public/win64/steam_api64.lib',
 ]
 
-PROTOC = 'devtools/bin/protoc.exe'
 
 def ConfigureCxx(context, binary, sdk):
   cxx = binary.compiler

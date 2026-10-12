@@ -1,0 +1,23 @@
+# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+#
+# The SDK's protoc and protobufs -- AMBuild twin of makefiles/cmake/protobufs.cmake.
+import os
+import sys
+
+# protoc runs on the host, which can differ from the target
+PROTOC = 'devtools/bin/protoc.exe' if sys.platform == 'win32' else 'devtools/bin/linux/protoc'
+
+# The SDK's protoc, looking imports up in the SDK's include paths (SdkTarget.protoc)
+def DetectProtoc(context, sdk, include_paths):
+  protoc = context.DetectProtoc(path = os.path.join(sdk['path'], PROTOC))
+  protoc.includes += [os.path.join(sdk['path'], path) for path in include_paths]
+  return protoc
+
+# Generates the given protos into the binary and compiles them with it, like
+# s2sdk_protobufs(). The protos are relative to the SDK or absolute, and a
+# proto's imports have to be listed too.
+#
+#   SdkHelpers.addProtobufs(builder, binary, sdk_target, ['common/netmessages.proto', ...])
+def AddProtobufs(context, binary, sdk_target, protos):
+  sources = [proto if os.path.isabs(proto) else os.path.join(sdk_target.sdk['path'], proto) for proto in protos]
+  binary.custom += [context.tools.Protoc(protoc = sdk_target.protoc, sources = sources)]

@@ -9,7 +9,8 @@
 # manifests/<game>.json has what differs per game. What a binary needs from the
 # SDK is the same for every game and comes from makefiles/cmake/:
 # shared.cmake <-> shared.ambuild, linux.cmake <-> linux.ambuild,
-# windows.cmake <-> windows.ambuild -- the CMake twins of makefiles/ambuild/,
+# windows.cmake <-> windows.ambuild, protobufs.cmake <-> protobufs.ambuild --
+# the CMake twins of makefiles/ambuild/,
 # which SdkHelpers.ambuild loads for AMBuild builds.
 #
 # Targets, under the prefix (s2sdk by default):

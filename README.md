@@ -10,9 +10,9 @@ manifests/<game>.json            what differs per game: name, SOURCE_ENGINE code
 SdkHelpers.ambuild               AMBuild entry point (hl2sdk-manifests' SdkHelpers interface)
 s2sdk-manifests.cmake            CMake entry point (s2sdk_manifest(), s2sdk_protobufs())
 makefiles/ambuild/shared.ambuild <-> makefiles/cmake/shared.cmake    include paths, defines, C++ standard
-makefiles/ambuild/linux.ambuild  <-> makefiles/cmake/linux.cmake     Linux defines, libraries, protoc
-makefiles/ambuild/windows.ambuild <-> makefiles/cmake/windows.cmake  Windows defines, libraries, protoc
-makefiles/cmake/protobufs.cmake                                      s2sdk_protobufs(), AMBuild's Protoc tool
+makefiles/ambuild/linux.ambuild  <-> makefiles/cmake/linux.cmake     Linux defines and libraries
+makefiles/ambuild/windows.ambuild <-> makefiles/cmake/windows.cmake  Windows defines and libraries
+makefiles/ambuild/protobufs.ambuild <-> makefiles/cmake/protobufs.cmake  protoc, addProtobufs() / s2sdk_protobufs()
 tests/ambuild, tests/cmake       the same small library through each
 ```
 
@@ -27,7 +27,7 @@ SdkHelpers = builder.Eval('s2sdk-manifests/SdkHelpers.ambuild')
 SdkHelpers.findSdks(builder, cxx_list, ['cs2'])  # find_sdk_path defaults to the manifest's env_vars
 for sdk_target in SdkHelpers.sdk_targets:
     SdkHelpers.configureCxx(builder, binary, sdk_target.sdk)
-    # sdk_target.protoc: protoc with the SDK's include paths
+    SdkHelpers.addProtobufs(builder, binary, sdk_target, ['common/netmessages.proto', ...])
 ```
 
 ## CMake

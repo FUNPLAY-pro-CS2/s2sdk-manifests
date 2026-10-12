@@ -1,5 +1,13 @@
-# s2sdk_protobufs() -- CMake twin of AMBuild's Protoc tool with SdkTarget.protoc.
-#
+# The SDK's protoc and protobufs -- CMake twin of makefiles/ambuild/protobufs.ambuild.
+
+# protoc runs on the host, which can differ from the target
+if(CMAKE_HOST_WIN32)
+	set(S2SDK_PROTOC devtools/bin/protoc.exe)
+else()
+	set(S2SDK_PROTOC devtools/bin/linux/protoc)
+endif()
+
+# s2sdk_protobufs(), like SdkHelpers.addProtobufs():
 # Generates the given protos into a target and compiles them with it. The protos
 # are relative to the SDK or absolute, and a proto's imports have to be listed
 # too. Imports are looked up in each proto's folder, then the SDK's include

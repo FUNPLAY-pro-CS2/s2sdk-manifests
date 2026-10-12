@@ -17,9 +17,9 @@ for sdk_target in SdkHelpers.sdk_targets:
   else:
     binary.compiler.cflags += ['/MT', '/EHsc']
   SdkHelpers.configureCxx(builder, binary, sdk)
-  binary.custom = [builder.tools.Protoc(protoc = sdk_target.protoc, sources = [
-    os.path.join(sdk['path'], 'common', 'valveextensions.proto'),
-    os.path.join(sdk['path'], 'common', 'network_connection.proto'),
-    os.path.join(sdk['path'], 'common', 'networkbasetypes.proto'),
-  ])]
+  SdkHelpers.addProtobufs(builder, binary, sdk_target, [
+    'common/valveextensions.proto',
+    'common/network_connection.proto',
+    'common/networkbasetypes.proto',
+  ])
   builder.Add(binary)

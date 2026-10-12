@@ -34,7 +34,6 @@ SHARED_LIBS = [
   'lib/linux64/libsteam_api.so',
 ]
 
-PROTOC = 'devtools/bin/linux/protoc'
 
 def ConfigureCxx(context, binary, sdk):
   cxx = binary.compiler

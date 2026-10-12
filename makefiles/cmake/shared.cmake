@@ -32,13 +32,8 @@ function(s2sdk_configure_shared prefix sdk_dir code)
 	target_include_directories(${prefix}_headers INTERFACE ${includes})
 	target_compile_definitions(${prefix}_headers INTERFACE SOURCE_ENGINE=${code} ${S2SDK_DEFINES})
 	target_compile_features(${prefix}_headers INTERFACE cxx_std_${S2SDK_CXX_STANDARD})
-	set_target_properties(${prefix}_headers PROPERTIES INTERFACE_S2SDK_DIR "${sdk_dir}")
-
-	# protoc runs on the host, which can differ from the target
-	if(CMAKE_HOST_WIN32)
-		set(protoc devtools/bin/protoc.exe)
-	else()
-		set(protoc devtools/bin/linux/protoc)
-	endif()
-	set_target_properties(${prefix}_headers PROPERTIES INTERFACE_S2SDK_PROTOC "${sdk_dir}/${protoc}")
+	set_target_properties(${prefix}_headers PROPERTIES
+		INTERFACE_S2SDK_DIR "${sdk_dir}"
+		INTERFACE_S2SDK_PROTOC "${sdk_dir}/${S2SDK_PROTOC}"
+	)
 endfunction()
