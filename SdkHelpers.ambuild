@@ -9,7 +9,7 @@
 # windows.ambuild <-> windows.cmake, protobufs.ambuild <-> protobufs.cmake --
 # the AMBuild twins of makefiles/cmake/,
 # which s2sdk-manifests.cmake loads for CMake builds.
-import importlib.util
+import importlib.machinery, importlib.util
 import json
 import os
 import sys
